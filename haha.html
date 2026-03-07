@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>情侣飞行棋</title>
+    <title>妹妹哥哥飞行棋 · 下拉双仓库</title>
     <style>
         * {
             box-sizing: border-box;
@@ -309,7 +309,7 @@
             gap: 10px;
         }
 
-        /* 任务仓库 - 手机优化 */
+        /* 任务仓库 - 下拉菜单样式 */
         .task-repo {
             background: #ecd9b5;
             border-radius: clamp(40px, 8vw, 90px);
@@ -330,6 +330,70 @@
         .repo-header h3 {
             font-size: clamp(1.4rem, 3vw, 2.6rem);
             color: #533b1f;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .repo-header h3:hover {
+            opacity: 0.8;
+        }
+
+        .dropdown-arrow {
+            font-size: 1.5rem;
+            transition: transform 0.3s;
+        }
+
+        .dropdown-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .repo-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #fff3e0;
+            min-width: 200px;
+            border-radius: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 100;
+            border: 3px solid #b57847;
+            margin-top: 5px;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            font-size: 1.6rem;
+            cursor: pointer;
+            border-bottom: 1px solid #d4a373;
+            border-radius: 25px 25px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+            border-radius: 0 0 25px 25px;
+        }
+
+        .dropdown-item:hover {
+            background: #ffe6c9;
+        }
+
+        .dropdown-item.active {
+            background: #d4a373;
+            color: white;
+            font-weight: bold;
         }
 
         .add-task-form {
@@ -435,12 +499,22 @@
 
     <div class="task-repo">
         <div class="repo-header">
-            <h3>📋 任务仓库 (默认+自定义)</h3>
-            <div class="add-task-form">
+            <h3 id="repoTitle">
+                <span>📋 任务仓库</span>
+                <span class="dropdown-arrow" id="dropdownArrow">▼</span>
+            </h3>
+            <div class="add-task-form" id="addTaskForm">
                 <input type="text" id="newTaskInput" placeholder="添加自定义任务...">
                 <button id="addTaskBtn">添加</button>
             </div>
         </div>
+        
+        <!-- 下拉菜单 -->
+        <div class="dropdown-menu" id="dropdownMenu">
+            <div class="dropdown-item active" data-repo="default">📌 默认仓库（只读）</div>
+            <div class="dropdown-item" data-repo="custom">✏️ 自定义仓库</div>
+        </div>
+
         <div class="task-list" id="taskListContainer"></div>
     </div>
 
@@ -455,9 +529,9 @@
 
 <script>
     (function() {
-        const STORAGE_KEY = 'customTasks_v1';  // 只存储自定义任务
+        const CUSTOM_STORAGE_KEY = 'customTasks_v2';
         
-        // 默认任务数组 - 只读模板，您可以手动修改这里
+        // 默认任务数组 - 只读模板
         const DEFAULT_TASKS = [
             "做一个鬼脸", "唱一句歌词", "学猫叫", "拥抱一下", "说冷笑话",
             "原地转三圈", "夸对方", "拍手三下", "闭眼10秒", "大声说我最好看",
@@ -475,8 +549,8 @@
         // 用户自定义任务数组
         let customTasks = [];
         
-        // 最终合并显示的任务列表（默认+自定义）
-        let mergedTasks = [];
+        // 当前显示的仓库类型: 'default' 或 'custom'
+        let currentRepo = 'default';
 
         const GRID_COUNT = 50;
         let gridTasks = [];
@@ -485,7 +559,7 @@
             { pos: 0, finished: false },
             { pos: 0, finished: false }
         ];
-        let currentPlayer = 0; // 0:妹妹(红), 1:哥哥(蓝)
+        let currentPlayer = 0;
         let diceValue = 1;
         let rolling = false;
         let timer = null;
@@ -508,12 +582,17 @@
         const taskListContainer = document.getElementById('taskListContainer');
         const newTaskInput = document.getElementById('newTaskInput');
         const addTaskBtn = document.getElementById('addTaskBtn');
+        const addTaskForm = document.getElementById('addTaskForm');
         const player1Input = document.getElementById('player1Name');
         const player2Input = document.getElementById('player2Name');
+        const repoTitle = document.getElementById('repoTitle');
+        const dropdownArrow = document.getElementById('dropdownArrow');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const dropdownItems = document.querySelectorAll('.dropdown-item');
 
         // 初始化自定义任务库
         function initializeCustomTasks() {
-            const stored = localStorage.getItem(STORAGE_KEY);
+            const stored = localStorage.getItem(CUSTOM_STORAGE_KEY);
             
             if (stored) {
                 try {
@@ -524,82 +603,108 @@
                 } catch {
                     customTasks = [];
                 }
-            } else {
-                // 第一次使用，自定义任务为空数组（用户需要自己添加，或者可以选择初始为空）
-                customTasks = [];
-                // 如果您希望第一次使用时自定义任务包含默认任务，可以取消下面的注释
-                // customTasks = [...DEFAULT_TASKS];
             }
             
-            // 合并并显示任务列表
-            mergeAndRenderTasks();
-        }
-
-        // 合并默认任务和自定义任务（默认任务在前，自定义任务在后）
-        function mergeTasks() {
-            // 合并规则：默认任务（去重）+ 自定义任务（保持用户添加顺序）
-            // 注意：如果自定义任务与默认任务重复，我们仍然保留（用户可以自由管理）
-            return [...DEFAULT_TASKS, ...customTasks];
-        }
-
-        // 合并并渲染任务列表
-        function mergeAndRenderTasks() {
-            mergedTasks = mergeTasks();
+            // 第一次使用且自定义仓库为空时，复制默认仓库
+            if (customTasks.length === 0) {
+                customTasks = [...DEFAULT_TASKS];
+                saveCustomTasks();
+            }
+            
+            // 默认显示默认仓库
+            currentRepo = 'default';
+            updateRepoDisplay();
             renderTaskList();
         }
 
         function saveCustomTasks() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(customTasks));
-            // 保存后重新合并显示
-            mergeAndRenderTasks();
+            localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(customTasks));
         }
 
+        // 更新仓库显示状态
+        function updateRepoDisplay() {
+            // 更新下拉菜单选中状态
+            dropdownItems.forEach(item => {
+                const repo = item.dataset.repo;
+                if (repo === currentRepo) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // 根据当前仓库显示/隐藏添加任务表单
+            if (currentRepo === 'custom') {
+                addTaskForm.style.display = 'flex';
+            } else {
+                addTaskForm.style.display = 'none';
+            }
+        }
+
+        // 切换下拉菜单显示
+        function toggleDropdown() {
+            dropdownMenu.classList.toggle('show');
+            dropdownArrow.classList.toggle('open');
+        }
+
+        // 隐藏下拉菜单
+        function hideDropdown() {
+            dropdownMenu.classList.remove('show');
+            dropdownArrow.classList.remove('open');
+        }
+
+        // 渲染任务列表
         function renderTaskList() {
             taskListContainer.innerHTML = '';
             
-            // 显示所有合并后的任务（但删除按钮只对自定义任务生效）
-            mergedTasks.forEach((task, index) => {
+            // 根据当前仓库选择显示的任务数组
+            const tasksToShow = currentRepo === 'default' ? DEFAULT_TASKS : customTasks;
+            
+            tasksToShow.forEach((task, index) => {
                 const chip = document.createElement('div');
                 chip.className = 'task-chip';
                 
-                // 判断这个任务是否来自自定义数组（用于决定是否显示删除按钮）
-                const isCustom = customTasks.includes(task);
-                
-                if (isCustom) {
-                    // 自定义任务：显示删除按钮
+                if (currentRepo === 'custom') {
+                    // 自定义仓库：显示删除按钮
                     chip.innerHTML = `<span>${task}</span><button class="remove-task" data-task="${task}">✖</button>`;
                 } else {
-                    // 默认任务：不显示删除按钮
+                    // 默认仓库：只显示任务，没有删除按钮
                     chip.innerHTML = `<span>${task}</span>`;
                 }
                 
                 taskListContainer.appendChild(chip);
             });
             
-            // 绑定删除事件（只对自定义任务生效）
-            document.querySelectorAll('.remove-task').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const taskToRemove = btn.dataset.task;
-                    removeCustomTask(taskToRemove);
+            // 绑定删除事件（只在自定义仓库时有效）
+            if (currentRepo === 'custom') {
+                document.querySelectorAll('.remove-task').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const taskToRemove = btn.dataset.task;
+                        removeCustomTask(taskToRemove);
+                    });
                 });
-            });
+            }
         }
 
         function addCustomTask(newTask) {
             if (newTask.trim() === '') return;
             
-            // 添加到自定义数组（不检查重复，用户可以自己管理）
             customTasks.unshift(newTask.trim());
             saveCustomTasks();
+            
+            // 如果当前在自定义仓库视图，立即刷新显示
+            if (currentRepo === 'custom') {
+                renderTaskList();
+            }
         }
 
         function removeCustomTask(task) {
-            // 只从自定义数组中删除
             const index = customTasks.indexOf(task);
             if (index !== -1) {
                 customTasks.splice(index, 1);
                 saveCustomTasks();
+                renderTaskList(); // 刷新显示
             }
         }
 
@@ -617,12 +722,14 @@
                 [middleIndices[i], middleIndices[j]] = [middleIndices[j], middleIndices[i]];
             }
 
-            // 使用合并后的任务列表 mergedTasks
+            // 合并默认任务和自定义任务，用于格子随机分配
+            const allTasks = [...DEFAULT_TASKS, ...customTasks];
+
             for (let k = 0; k < 43; k++) {
                 const idx = middleIndices[k];
-                if (mergedTasks.length > 0) {
-                    const rand = Math.floor(Math.random() * mergedTasks.length);
-                    tasks[idx] = mergedTasks[rand];
+                if (allTasks.length > 0) {
+                    const rand = Math.floor(Math.random() * allTasks.length);
+                    tasks[idx] = allTasks[rand];
                 } else {
                     tasks[idx] = "默认任务: 做点有趣的事";
                 }
@@ -895,6 +1002,7 @@
             updateFooterNames();
         }
 
+        // 事件绑定
         rollBtn.addEventListener('click', rollDice);
         resetBtn.addEventListener('click', resetGame);
         closeTaskBtn.addEventListener('click', closeTaskManually);
@@ -903,8 +1011,47 @@
                 closeTaskManually();
             }
         });
-        addTaskBtn.addEventListener('click', () => { addCustomTask(newTaskInput.value); newTaskInput.value = ''; });
-        newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { addCustomTask(newTaskInput.value); newTaskInput.value = ''; } });
+        
+        // 添加任务（只在自定义仓库时有效）
+        addTaskBtn.addEventListener('click', () => { 
+            if (currentRepo === 'custom') {
+                addCustomTask(newTaskInput.value); 
+                newTaskInput.value = ''; 
+            }
+        });
+        
+        newTaskInput.addEventListener('keypress', (e) => { 
+            if (e.key === 'Enter' && currentRepo === 'custom') { 
+                addCustomTask(newTaskInput.value); 
+                newTaskInput.value = ''; 
+            } 
+        });
+
+        // 下拉菜单控制
+        repoTitle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+
+        // 点击下拉选项
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const repo = item.dataset.repo;
+                currentRepo = repo;
+                updateRepoDisplay();
+                renderTaskList();
+                hideDropdown();
+            });
+        });
+
+        // 点击其他地方关闭下拉菜单
+        document.addEventListener('click', (e) => {
+            if (!repoTitle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                hideDropdown();
+            }
+        });
+
         player1Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
         player2Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
 
