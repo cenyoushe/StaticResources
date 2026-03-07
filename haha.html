@@ -369,7 +369,7 @@
             background: #fff1d2;
             border-radius: clamp(40px, 7vw, 80px);
             border: 3px solid #b57847;
-            flex-direction: row-reverse;  /* 让新添加的显示在前面 */
+            flex-direction: row-reverse;
             justify-content: flex-end;
         }
 
@@ -455,30 +455,82 @@
 
 <script>
     (function() {
-        const STORAGE_KEY = 'finalTaskLib_v7';
+        const STORAGE_KEY = 'finalTaskLib_v8';
+        
+        // 默认任务数组 - 您可以手动修改这里的内容，刷新后会自动同步到本地存储
         const DEFAULT_TASKS = [
-            "轻轻吻对方嘴唇5秒", "用手指抚摸对方大腿内侧20秒", "隔着衣服揉对方胸部/臀部30秒",
-        "脱掉对方上衣，亲吻锁骨10秒", "让对方坐在你腿上，深吻1分钟",
-        "用舌头舔对方耳垂并轻咬", "互相脱掉对方的裤子/裙子", "蒙眼，让对方用嘴探索你身体任意部位30秒",
-        "给对方乳头轻轻咬一口（隔衣服也可）", "对方给你手冲30秒（可隔内裤）",
-        "69姿势保持30秒（可隔衣服）", "脱光上衣，让对方吸吮乳头20秒",
-        "用手指刺激对方私处外侧1分钟", "角色扮演：对方是你的主人/奴隶，服从30秒指令",
-        "互相口交模拟（用手指或舌头）40秒", "完全脱光，进行胸部/阴茎爱抚1分钟",
-        "对方用舌头舔你私处30秒", "后入式姿势演示（可隔空或轻触）",
-        "骑乘位保持20秒（可坐腿上）", "用性玩具（或手指）让对方到高潮边缘",
-        "真枪实弹插入一次（或模拟到高潮）", "口交到射/高潮", "肛交尝试（润滑+缓慢）",
-        "捆绑对方双手，轻SM 1分钟", "蒙眼+耳机放色情声音+爱抚", "在镜子前做爱姿势自拍（不发）",
-        "互相看对方自慰到高潮", "淋浴一起洗澡+互相擦身体", "车震模拟（沙发/床）",
-        "角色扮演老师/学生，惩罚play", "护士/病人，检查play", "警察/罪犯，手铐play",
-        "叫床声大赛，谁更大声谁赢", "脏话告白大赛", "描述你最想对对方做的3件事",
-        "用冰块在对方敏感部位滑动", "热蜡滴在对方身体（安全距离）", "轻度窒息play（手掐脖子）",
-        "足交1分钟", "乳交/腿交演示", "深喉练习（用手指或玩具）",
-        "互相喂对方体液（吻后交换）", "舔对方脚趾+脚底", "在对方身上写淫荡字",
-        "用振动棒/跳蛋玩对方", "肛塞插入保持一回合", "多人幻想：描述3P场景",
-        "公开场合摸对方（回忆或模拟）", "拍对方裸照（删掉也行）", "视频自慰给对方看",
-        "边做边录音叫床", "尝试新姿势：站立后入", "尝试新姿势：69+手指",
-        "边看A片边做", "用润滑油全身按摩+插入", "高潮控制：不准射/高潮直到命令",
-        "连续高潮挑战", "谁先高潮谁输（惩罚加倍）"
+            "隔着衣服用舌头在对方耳垂画圈 30秒，不许出声",
+  "蒙眼用手指在对方后背写“我好想要你”，猜对有奖励猜错惩罚加倍",
+  "用冰块从锁骨慢慢滑到小腹 画圈不许停",
+  "对方坐你大腿上双手被反绑 深吻到其中一方先求饶",
+  "脱掉上衣后舌尖沿脊椎一路舔到腰窝",
+  "隔着内裤指尖画圈挑逗最敏感点 但1分钟内不许真正进去",
+  "跪在面前托住下巴 用最色情声音说出三句想被怎么玩",
+  "推倒床上双手绑过头顶 从脚踝吻咬舔一路向上",
+  "69体位只许用舌头 谁先高潮或求饶算输",
+  "跳蛋/震动棒贴最敏感点 赢家控制强度看能忍多久不叫",
+  "后入式抱紧轻掐脖子 在耳边说最下流的情话",
+  "只能用嘴帮对方脱内裤 失败就塞内裤当口球",
+  "双手绑床头 用羽毛+冰块+舌头轮流刺激不碰想碰的地方",
+  "扮演被主人惩罚的宠物 爬过来求“主人随便玩我”",
+  "全程录像（仅自己看） 输家对着镜头承认今天被玩到腿软/高潮了",
+  "舔对方手指 一根一根慢慢含住深吮",
+  "用丝袜蒙眼 然后随机亲吻全身",
+  "隔着裤子用脚轻轻踩踏 最敏感部位30秒",
+  "把对方压墙上 单手扣住双手举高深吻+磨蹭",
+  "舌尖在乳尖画8字 不许停1分钟",
+  "蒙眼猜味道 用身体不同部位涂蜂蜜/巧克力酱让对方舔干净",
+  "轻咬耳垂 同时低声说“我今晚要弄哭你”",
+  "指甲从后颈一路轻轻刮到臀部",
+  "对方趴着 赢家从后面亲吻后腰慢慢往下",
+  "嘴里含冰块 然后跟对方舌吻传递冰感",
+  "输家用最羞耻姿势 主动展示自己最敏感的地方",
+  "赢家手机录下 对方高潮时的声音/表情片段",
+  "双手被绑背后 只能用嘴服侍对方",
+  "热毛巾敷敏感处 突然换冰块刺激",
+  "对方站立 赢家从后面抱住揉胸+咬肩膀",
+  "舔对方脚趾 一根一根慢慢吮吸",
+  "振动棒隔着内裤画∞符号",
+  "把对方推倒沙发 骑上去亲吻脖子留吻痕",
+  "舌头在肚脐画圈 同时手指往下挑逗",
+  "蒙眼+耳机放色情音声 然后突然触碰",
+  "双手举高绑床头 舌头从腋下舔到腰侧",
+  "对方趴着翘臀 赢家从后面亲吻臀缝",
+  "羽毛挑逗乳尖 直到对方主动求碰更激烈",
+  "69但禁止高潮 谁先到边缘就算输",
+  "低温安全蜡滴在背上/大腿",
+  "对方跪着抬头 赢家手指勾下巴喂水果/巧克力",
+  "把对方抱起抵墙 腿缠腰上激烈深吻",
+  "冰块在乳沟滑动 然后舌头舔掉水珠",
+  "对方四肢着地 赢家从后面轻拍臀部+挑逗",
+  "丝巾蒙眼+绑手 慢慢一件件脱衣服",
+  "跳蛋塞进内裤 遥控器交给对方随意玩",
+  "对方站镜子前 赢家从后面抱住一起看被玩",
+  "舌头舔锁骨 同时手指在后腰画淫荡图案",
+  "双手铐床头 振动棒慢慢靠近但不给满足",
+  "对方趴着 舌头沿着脊柱一路往下舔",
+  "热气吹敏感处 然后突然用舌头重重一舔",
+  "指尖轻弹乳尖 轻重交替玩弄",
+  "把对方压身下 单手轻掐脖子深吻",
+  "输家戴眼罩 猜对方用什么部位碰自己",
+  "舌头在耳后画爱心 同时低语羞耻指令",
+  "对方弯腰扶桌 赢家从后面贴紧磨蹭+轻拍",
+  "嘴里含冰块亲吻 最敏感点",
+  "对方腿被抬高 舌尖大腿内侧来回舔",
+  "丝袜轻勒脖子 轻微施力（安全第一）",
+  "指甲刮后背 画出各种淫荡图案",
+  "对方跪坐 赢家站着喂手指让吮吸",
+  "振动棒在锁骨滑动 慢慢往下逼近",
+  "把对方推倒 用膝盖顶开双腿固定",
+  "舌头在腋下画圈（超敏感者慎用）",
+  "对方趴床边 下半身悬空被各种玩弄",
+  "低温热蜡滴乳尖附近",
+  "跳蛋贴乳尖 遥控调最高看崩溃反应",
+  "对方双手举高 赢家从腋下舔到手腕内侧",
+  "舌头在后耳根吹气 同时轻捏敏感点",
+  "对方绑成大字型 赢家用全身慢慢摩擦挑逗",
+  "对方跪着抬头 赢家用性器轻拍脸颊羞辱",
+  "各种道具轮流刺激 直到对方彻底崩溃求饶"
         ];
 
         let taskLibrary = [];
@@ -515,28 +567,61 @@
         const player1Input = document.getElementById('player1Name');
         const player2Input = document.getElementById('player2Name');
 
-        // 加载/保存任务库
-        function loadTaskLibrary() {
+        // 初始化任务库 - 确保默认任务始终同步到本地存储
+        function initializeTaskLibrary() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
-                try { taskLibrary = JSON.parse(stored); } catch { taskLibrary = [...DEFAULT_TASKS]; }
-                if (!Array.isArray(taskLibrary) || taskLibrary.length === 0) taskLibrary = [...DEFAULT_TASKS];
+                try {
+                    // 如果有存储的任务，加载它们
+                    taskLibrary = JSON.parse(stored);
+                    // 检查是否需要合并默认任务（如果需要确保默认任务都存在，可以取消下面的注释）
+                    // 这里为了保持用户自定义的独立性，只加载存储的任务
+                } catch {
+                    // 如果解析失败，使用默认任务并保存
+                    taskLibrary = [...DEFAULT_TASKS];
+                    saveTaskLibrary();
+                }
             } else {
+                // 首次运行，使用默认任务并保存
                 taskLibrary = [...DEFAULT_TASKS];
+                saveTaskLibrary();
             }
+            
+            // 重要：每次刷新时，检查默认任务是否有更新，如果有更新，合并到现有任务库中
+            // 这样您手动修改 DEFAULT_TASKS 后，刷新页面会自动把新任务添加到本地存储
+            mergeDefaultTasks();
+            
             renderTaskList();
         }
+
+        // 合并默认任务到现有任务库（确保手动修改的默认任务能自动添加）
+        function mergeDefaultTasks() {
+            let needsSave = false;
+            
+            // 遍历默认任务，如果任务库中没有，就添加到头部
+            for (let i = DEFAULT_TASKS.length - 1; i >= 0; i--) {
+                const defaultTask = DEFAULT_TASKS[i];
+                if (!taskLibrary.includes(defaultTask)) {
+                    taskLibrary.unshift(defaultTask);
+                    needsSave = true;
+                }
+            }
+            
+            // 可选：移除任务库中不在默认任务中的条目？不这样做，保留用户自定义
+            
+            if (needsSave) {
+                saveTaskLibrary();
+            }
+        }
+
         function saveTaskLibrary() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(taskLibrary));
         }
 
         function renderTaskList() {
             taskListContainer.innerHTML = '';
-            // 为了让新添加的显示在前面，我们按原有顺序渲染，但通过CSS的flex-direction: row-reverse来控制显示顺序
-            // 但为了更直观，我们可以在渲染时就反转数组，这样新添加的会在视觉最前面
             const reversedLibrary = [...taskLibrary].reverse();
             reversedLibrary.forEach((task, i) => {
-                // 注意i是反转后的索引，但我们需要原始索引来删除
                 const originalIndex = taskLibrary.length - 1 - i;
                 const chip = document.createElement('div');
                 chip.className = 'task-chip';
@@ -553,7 +638,6 @@
 
         function addTask(newTask) {
             if (newTask.trim() === '') return;
-            // 添加到数组头部
             taskLibrary.unshift(newTask.trim());
             saveTaskLibrary();
             renderTaskList();
@@ -642,8 +726,16 @@
                 e.stopPropagation();
                 const idx = parseInt(cell.dataset.index);
                 const task = gridTasks[idx];
-                if (task) showTask(idx, task, false);
-                else alert(`格子 ${idx+1} 无任务`);
+                if (task) {
+                    // 手动点击格子查看任务，但不影响游戏流程
+                    taskTitle.textContent = `✨ 格子 ${idx+1} 的任务 ✨`;
+                    taskTextEl.textContent = task;
+                    taskModal.classList.add('show');
+                    isTaskModalOpen = true;
+                    // 手动查看时不清空自动关闭定时器，但不影响
+                } else {
+                    alert(`格子 ${idx+1} 无任务`);
+                }
             });
             return cell;
         }
@@ -865,7 +957,10 @@
         player1Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
         player2Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
 
-        loadTaskLibrary();
+        // 初始化任务库（会自动同步默认任务）
+        initializeTaskLibrary();
+        
+        // 分配格子任务
         gridTasks = assignTasksToGrid();
         renderBoard();
         updateFooterNames();
@@ -873,4 +968,3 @@
 </script>
 </body>
 </html>
-
