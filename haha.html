@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>妹妹哥哥飞行棋 · 切换仓库重置格子</title>
+    <title>妹妹哥哥飞行棋 · 任何操作重置游戏</title>
     <style>
         * {
             box-sizing: border-box;
@@ -529,21 +529,12 @@
 
 <script>
     (function() {
-        const CUSTOM_STORAGE_KEY = 'customTasks_v3';
+        const CUSTOM_STORAGE_KEY = 'customTasks_v4';
         
         // 默认任务数组 - 只读模板
         const DEFAULT_TASKS = [
             "做一个鬼脸", "唱一句歌词", "学猫叫", "拥抱一下", "说冷笑话",
-            "原地转三圈", "夸对方", "拍手三下", "闭眼10秒", "大声说我最好看",
-            "喝一口水", "跳一段舞", "模仿机器人", "讲电影台词", "深呼吸五次",
-            "双手合十", "胜利姿势", "单脚站5秒", "绕口令", "发出怪声",
-            "假装打电话", "比心", "揉揉脸", "伸懒腰", "假装生气",
-            "大笑三声", "惊讶表情", "学动物走", "摸脚趾", "双手举高",
-            "说句甜甜的话", "抛媚眼", "吹口哨", "拍拍肚子", "闭眼单脚跳",
-            "赞美妹妹/哥哥", "wink", "说今天日期", "拍拍手跺跺脚", "假装睡觉",
-            "学鸭子叫", "扭扭腰", "指天说必胜", "超级英雄", "假装哭泣",
-            "摸头发", "打响指", "学机器人走路", "双手比耶", "单眨眼",
-            "学青蛙跳", "大喊一声", "模仿明星", "做俯卧撑1个", "深蹲2个"
+            "原地转三圈", "夸对方", "拍手三下", "闭眼10秒", "大声说我最好看"
         ];
 
         // 用户自定义任务数组
@@ -616,9 +607,8 @@
             updateRepoDisplay();
             renderTaskList();
             
-            // 初始分配格子任务（使用所有任务）
-            gridTasks = assignTasksToGrid();
-            renderBoard();
+            // 初始分配格子任务并开始游戏
+            resetGameWithCurrentTasks();
         }
 
         function saveCustomTasks() {
@@ -702,9 +692,8 @@
                 renderTaskList();
             }
             
-            // 重新分配格子任务（基于更新后的所有任务）
-            gridTasks = assignTasksToGrid();
-            renderBoard();
+            // 重新分配格子任务并重置游戏
+            resetGameWithCurrentTasks();
         }
 
         function removeCustomTask(task) {
@@ -714,9 +703,8 @@
                 saveCustomTasks();
                 renderTaskList(); // 刷新显示
                 
-                // 重新分配格子任务（基于更新后的所有任务）
-                gridTasks = assignTasksToGrid();
-                renderBoard();
+                // 重新分配格子任务并重置游戏
+                resetGameWithCurrentTasks();
             }
         }
 
@@ -749,16 +737,26 @@
             return tasks;
         }
 
-        // 重置游戏（不重置任务库，只重置位置和重新分配格子）
+        // 重置游戏（重置位置、重新分配格子任务、从头开始）
         function resetGameWithCurrentTasks() {
-            clearInterval(timer); rolling = false; isMoving = false; diceEl.classList.remove('rolling');
+            // 停止所有动画和计时器
+            clearInterval(timer); 
+            rolling = false; 
+            isMoving = false; 
+            diceEl.classList.remove('rolling');
             if (autoCloseTimer) clearTimeout(autoCloseTimer);
             closeTaskImmediately();
+            
+            // 重置玩家位置到起点
             players = [ { pos: 0, finished: false }, { pos: 0, finished: false } ];
-            currentPlayer = 0;
+            currentPlayer = 0; // 妹妹先手
             diceValue = 1;
             updateDiceFace(1);
+            
+            // 重新分配格子任务
             gridTasks = assignTasksToGrid();
+            
+            // 重新渲染棋盘
             renderBoard();
             winnerMsg.innerText = '先到终点者赢';
             updateFooterNames();
@@ -1015,13 +1013,9 @@
             else winnerMsg.innerText = '先到终点者赢';
         }
 
-        function resetGame() {
-            resetGameWithCurrentTasks();
-        }
-
         // 事件绑定
         rollBtn.addEventListener('click', rollDice);
-        resetBtn.addEventListener('click', resetGame);
+        resetBtn.addEventListener('click', () => resetGameWithCurrentTasks());
         closeTaskBtn.addEventListener('click', closeTaskManually);
         taskModal.addEventListener('click', (e) => {
             if (e.target === taskModal) {
@@ -1060,7 +1054,7 @@
                     updateRepoDisplay();
                     renderTaskList();
                     
-                    // 切换仓库时重新开始游戏（重置位置并重新分配格子任务）
+                    // 切换仓库时重置游戏
                     resetGameWithCurrentTasks();
                 }
                 hideDropdown();
