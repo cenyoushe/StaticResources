@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>自适应飞行棋 · 手机/电脑通用</title>
+    <title>情侣飞行棋</title>
     <style>
         * {
             box-sizing: border-box;
@@ -59,6 +59,10 @@
             align-items: center;
             gap: clamp(8px, 1.5vw, 18px);
             font-size: clamp(1.2rem, 2.5vw, 2rem);
+        }
+
+        .player-item span {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
         }
 
         .player-item input {
@@ -365,6 +369,8 @@
             background: #fff1d2;
             border-radius: clamp(40px, 7vw, 80px);
             border: 3px solid #b57847;
+            flex-direction: row-reverse;  /* 让新添加的显示在前面 */
+            justify-content: flex-end;
         }
 
         .task-chip {
@@ -400,12 +406,12 @@
     <div class="header">
         <div class="player-box">
             <div class="player-item">
-                <span style="color:#d32f2f;">●</span>
-                <input type="text" id="player1Name" value="红方" maxlength="12">
+                <span style="color:#d32f2f;">👧</span>
+                <input type="text" id="player1Name" value="妹妹" maxlength="12">
             </div>
             <div class="player-item">
-                <span style="color:#1976d2;">●</span>
-                <input type="text" id="player2Name" value="蓝方" maxlength="12">
+                <span style="color:#1976d2;">👦</span>
+                <input type="text" id="player2Name" value="哥哥" maxlength="12">
             </div>
         </div>
         <div class="dice-block">
@@ -423,7 +429,7 @@
     </div>
 
     <div class="footer-info">
-        <span id="playerFooter">👤 红方  👤 蓝方</span>
+        <span id="playerFooter">👧 妹妹  👦 哥哥</span>
         <span id="winnerMsg">先到终点者赢</span>
     </div>
 
@@ -449,16 +455,16 @@
 
 <script>
     (function() {
-        const STORAGE_KEY = 'finalTaskLib_v6';
+        const STORAGE_KEY = 'finalTaskLib_v7';
         const DEFAULT_TASKS = [
             "做一个鬼脸", "唱一句歌词", "学猫叫", "拥抱一下", "说冷笑话",
-            "原地转三圈", "夸对手", "拍手三下", "闭眼10秒", "大声说我最好看",
+            "原地转三圈", "夸对方", "拍手三下", "闭眼10秒", "大声说我最好看",
             "喝一口水", "跳一段舞", "模仿机器人", "讲电影台词", "深呼吸五次",
             "双手合十", "胜利姿势", "单脚站5秒", "绕口令", "发出怪声",
             "假装打电话", "比心", "揉揉脸", "伸懒腰", "假装生气",
             "大笑三声", "惊讶表情", "学动物走", "摸脚趾", "双手举高",
-            "说情话", "抛媚眼", "吹口哨", "拍拍肚子", "闭眼单脚跳",
-            "赞美对方", "wink", "说今天日期", "拍拍手跺跺脚", "假装睡觉",
+            "说句甜甜的话", "抛媚眼", "吹口哨", "拍拍肚子", "闭眼单脚跳",
+            "赞美妹妹/哥哥", "wink", "说今天日期", "拍拍手跺跺脚", "假装睡觉",
             "学鸭子叫", "扭扭腰", "指天说必胜", "超级英雄", "假装哭泣",
             "摸头发", "打响指", "学机器人走路", "双手比耶", "单眨眼",
             "学青蛙跳", "大喊一声", "模仿明星", "做俯卧撑1个", "深蹲2个"
@@ -472,7 +478,7 @@
             { pos: 0, finished: false },
             { pos: 0, finished: false }
         ];
-        let currentPlayer = 0;
+        let currentPlayer = 0; // 0:妹妹(红), 1:哥哥(蓝)
         let diceValue = 1;
         let rolling = false;
         let timer = null;
@@ -498,6 +504,7 @@
         const player1Input = document.getElementById('player1Name');
         const player2Input = document.getElementById('player2Name');
 
+        // 加载/保存任务库
         function loadTaskLibrary() {
             const stored = localStorage.getItem(STORAGE_KEY);
             if (stored) {
@@ -514,10 +521,15 @@
 
         function renderTaskList() {
             taskListContainer.innerHTML = '';
-            taskLibrary.forEach((task, i) => {
+            // 为了让新添加的显示在前面，我们按原有顺序渲染，但通过CSS的flex-direction: row-reverse来控制显示顺序
+            // 但为了更直观，我们可以在渲染时就反转数组，这样新添加的会在视觉最前面
+            const reversedLibrary = [...taskLibrary].reverse();
+            reversedLibrary.forEach((task, i) => {
+                // 注意i是反转后的索引，但我们需要原始索引来删除
+                const originalIndex = taskLibrary.length - 1 - i;
                 const chip = document.createElement('div');
                 chip.className = 'task-chip';
-                chip.innerHTML = `<span>${task}</span><button class="remove-task" data-index="${i}">✖</button>`;
+                chip.innerHTML = `<span>${task}</span><button class="remove-task" data-index="${originalIndex}">✖</button>`;
                 taskListContainer.appendChild(chip);
             });
             document.querySelectorAll('.remove-task').forEach(btn => {
@@ -530,7 +542,8 @@
 
         function addTask(newTask) {
             if (newTask.trim() === '') return;
-            taskLibrary.push(newTask.trim());
+            // 添加到数组头部
+            taskLibrary.unshift(newTask.trim());
             saveTaskLibrary();
             renderTaskList();
         }
@@ -543,6 +556,7 @@
             }
         }
 
+        // 强制43个格子有任务
         function assignTasksToGrid() {
             const tasks = new Array(GRID_COUNT).fill(null);
             tasks[0] = null;
@@ -632,7 +646,7 @@
                     const piece1 = document.createElement('div');
                     piece1.className = 'piece p1';
                     piece1.dataset.player = '0';
-                    piece1.textContent = player1Input.value.trim() || '红方';
+                    piece1.textContent = player1Input.value.trim() || '妹妹';
                     cell1.style.position = 'relative';
                     cell1.appendChild(piece1);
                 }
@@ -644,7 +658,7 @@
                     const piece2 = document.createElement('div');
                     piece2.className = 'piece p2';
                     piece2.dataset.player = '1';
-                    piece2.textContent = player2Input.value.trim() || '蓝方';
+                    piece2.textContent = player2Input.value.trim() || '哥哥';
                     if (players[0].pos === players[1].pos && !players[0].finished && !players[1].finished) {
                         piece2.style.transform = 'translate(-30%, -30%)';
                         const p1 = cell2.querySelector('.piece.p1');
@@ -743,7 +757,7 @@
         }
 
         function getOpponentName() {
-            return currentPlayer === 0 ? (player2Input.value.trim() || '蓝方') : (player1Input.value.trim() || '红方');
+            return currentPlayer === 0 ? (player2Input.value.trim() || '哥哥') : (player1Input.value.trim() || '妹妹');
         }
 
         function showTaskWithOpponentName(gridIndex, task) {
@@ -800,16 +814,16 @@
         }
 
         function getPlayerName(idx) {
-            return idx === 0 ? (player1Input.value.trim() || '红方') : (player2Input.value.trim() || '蓝方');
+            return idx === 0 ? (player1Input.value.trim() || '妹妹') : (player2Input.value.trim() || '哥哥');
         }
 
         function updateFooterNames() {
-            playerFooter.innerText = `👤 ${player1Input.value || '红方'}  👤 ${player2Input.value || '蓝方'}`;
+            playerFooter.innerText = `👧 ${player1Input.value || '妹妹'}  👦 ${player2Input.value || '哥哥'}`;
         }
 
         function checkWinner() {
-            if (players[0].finished) winnerMsg.innerText = `🏆 ${player1Input.value || '红方'} 获胜！ 🏆`;
-            else if (players[1].finished) winnerMsg.innerText = `🏆 ${player2Input.value || '蓝方'} 获胜！ 🏆`;
+            if (players[0].finished) winnerMsg.innerText = `🏆 ${player1Input.value || '妹妹'} 获胜！ 🏆`;
+            else if (players[1].finished) winnerMsg.innerText = `🏆 ${player2Input.value || '哥哥'} 获胜！ 🏆`;
             else winnerMsg.innerText = '先到终点者赢';
         }
 
