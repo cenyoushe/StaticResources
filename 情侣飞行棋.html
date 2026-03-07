@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最终修正版 · 手动/自动弹窗分离</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1d4f3c 0%, #357a5c 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 1350px;
+            width: 100%;
+            background: #fbefd7;
+            border-radius: 90px;
+            box-shadow: 0 30px 45px rgba(0,0,0,0.7), inset 4px 4px 15px #fff4d2;
+            padding: 40px;
+            border: 8px solid #efc58b;
+        }
+
+        /* 头部 */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff3d9;
+            padding: 22px 40px;
+            border-radius: 100px;
+            margin-bottom: 35px;
+            border: 5px solid #d6a567;
+        }
+
+        .player-box {
+            display: flex;
+            gap: 45px;
+            background: #ffefce;
+            padding: 18px 40px;
+            border-radius: 90px;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            font-size: 2rem;
+        }
+
+        .player-item input {
+            font-size: 2rem;
+            width: 170px;
+            padding: 10px 20px;
+            border-radius: 70px;
+            border: 4px solid #b87f41;
+            background: #fffcf0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .dice-block {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            background: #ffefce;
+            padding: 12px 40px;
+            border-radius: 90px;
+        }
+
+        .dice-box {
+            width: 110px;
+            height: 110px;
+            background: white;
+            border-radius: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5.5rem;
+            font-weight: bold;
+            box-shadow: inset 0 -5px 5px rgba(0,0,0,0.1), 0 14px 0 #9e632e;
+            border: 5px solid #71491e;
+            color: #2b1c0b;
+            transition: transform 0.05s;
+        }
+
+        .dice-box.rolling {
+            animation: shake 0.15s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(14deg) scale(1.1); }
+            50% { transform: rotate(-14deg) scale(1.1); }
+            75% { transform: rotate(8deg) scale(1.05); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+
+        /* 棋盘 50格 5行x10列 */
+        .board {
+            background: #dfb77e;
+            padding: 40px;
+            border-radius: 100px;
+            border: 8px solid #ad763b;
+            box-shadow: inset 0 0 0 12px #f7dcb1;
+            margin-bottom: 35px;
+        }
+
+        .track {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .grid-row {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+        }
+
+        .cell {
+            width: 110px;
+            height: 110px;
+            background: #fff7e6;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #4f351e;
+            box-shadow: inset 0 -7px 0 #c9a875, 0 9px 0 #7e592e;
+            border: 4px solid #c08b4a;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .cell.start {
+            background: #b3e0b0;
+            box-shadow: inset 0 -7px 0 #7bb07b, 0 9px 0 #3b7a3b;
+            border-color: #2f8230;
+            font-weight: 700;
+        }
+
+        .cell.finish {
+            background: #f8dba8;
+            box-shadow: inset 0 -7px 0 #dcb067, 0 9px 0 #b4722c;
+            border-color: #cd7d2a;
+            font-weight: 700;
+        }
+
+        /* 棋子 - 缓动动画 */
+        .piece {
+            width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            border: 5px solid white;
+            box-shadow: 0 8px 12px black;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #333;
+            color: white;
+            font-weight: bold;
+            z-index: 10;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            text-shadow: 2px 2px 3px black;
+            word-break: break-word;
+            text-align: center;
+            line-height: 1.2;
+            padding: 0 6px;
+            transition: left 0.6s cubic-bezier(0.25, 0.1, 0.15, 1.2), top 0.6s cubic-bezier(0.25, 0.1, 0.15, 1.2);
+        }
+
+        .piece.p1 { background: #d32f2f; }
+        .piece.p2 { background: #1976d2; }
+
+        /* 任务弹窗 */
+        .task-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        .task-modal.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .task-card {
+            background: #fff8e7;
+            max-width: 700px;
+            width: 90%;
+            padding: 50px;
+            border-radius: 120px;
+            border: 10px solid #e6aa6a;
+            box-shadow: 0 30px 50px black;
+            text-align: center;
+            transform: scale(0.7);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .task-modal.show .task-card {
+            transform: scale(1);
+        }
+
+        .task-card h2 {
+            font-size: 3.5rem;
+            color: #a5531b;
+            margin-bottom: 30px;
+        }
+
+        .task-content {
+            font-size: 2.8rem;
+            background: #ffd9a8;
+            padding: 60px 30px;
+            border-radius: 90px;
+            margin: 30px 0;
+            border: 6px solid #c98342;
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+        }
+
+        .close-task {
+            background: #f7b731;
+            border: none;
+            font-size: 3rem;
+            padding: 20px 70px;
+            border-radius: 90px;
+            font-weight: bold;
+            color: #3b280f;
+            border-bottom: 10px solid #a4681a;
+            cursor: pointer;
+            transition: 0.05s linear;
+            margin-top: 20px;
+        }
+
+        .close-task:active { transform: translateY(7px); border-bottom-width: 3px; }
+
+        .controls {
+            display: flex;
+            gap: 35px;
+            justify-content: center;
+            margin: 35px 0 25px;
+        }
+
+        .ctrl-btn {
+            background: #ffb882;
+            border: 7px solid #8b5a2b;
+            color: #36200c;
+            font-size: 2.6rem;
+            font-weight: bold;
+            padding: 18px 65px;
+            border-radius: 100px;
+            cursor: pointer;
+            box-shadow: 0 12px 0 #6b3f20;
+            transition: 0.05s linear;
+        }
+
+        .ctrl-btn:active { transform: translateY(7px); box-shadow: 0 5px 0 #6b3f20; }
+
+        .footer-info {
+            display: flex;
+            justify-content: space-between;
+            color: #4a311b;
+            font-size: 2.2rem;
+            background: #eedbba;
+            padding: 18px 40px;
+            border-radius: 90px;
+            border: 5px solid #b6834c;
+        }
+
+        /* 任务仓库（底部） */
+        .task-repo {
+            background: #ecd9b5;
+            border-radius: 90px;
+            padding: 35px;
+            margin-top: 30px;
+            border: 7px solid #b27d45;
+        }
+
+        .repo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .repo-header h3 {
+            font-size: 2.6rem;
+            color: #533b1f;
+        }
+
+        .add-task-form {
+            display: flex;
+            gap: 18px;
+        }
+
+        .add-task-form input {
+            font-size: 2rem;
+            padding: 14px 32px;
+            border-radius: 80px;
+            border: 4px solid #a57238;
+            width: 380px;
+            background: #fffcf0;
+        }
+
+        .add-task-form button {
+            background: #719f4a;
+            border: none;
+            padding: 0 45px;
+            border-radius: 80px;
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: white;
+            border-bottom: 8px solid #42632c;
+            cursor: pointer;
+        }
+
+        .task-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            max-height: 260px;
+            overflow-y: auto;
+            padding: 25px;
+            background: #fff1d2;
+            border-radius: 80px;
+            border: 5px solid #b57847;
+        }
+
+        .task-chip {
+            background: #ffdfa3;
+            padding: 14px 32px;
+            border-radius: 70px;
+            font-size: 1.9rem;
+            border: 3px solid #a57035;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 5px 0 #8b6130;
+        }
+
+        .task-chip .remove-task {
+            background: #d65757;
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            font-size: 2.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 5px solid #913e3e;
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="header">
+        <div class="player-box">
+            <div class="player-item">
+                <span style="color:#d32f2f;">●</span>
+                <input type="text" id="player1Name" value="红方" maxlength="12">
+            </div>
+            <div class="player-item">
+                <span style="color:#1976d2;">●</span>
+                <input type="text" id="player2Name" value="蓝方" maxlength="12">
+            </div>
+        </div>
+        <div class="dice-block">
+            <div class="dice-box" id="dice">⚀</div>
+        </div>
+    </div>
+
+    <div class="board">
+        <div class="track" id="trackContainer"></div>
+    </div>
+
+    <div class="controls">
+        <button class="ctrl-btn" id="rollDiceBtn">🎲 掷骰子</button>
+        <button class="ctrl-btn" id="resetBtn">🔄 重新开始</button>
+    </div>
+
+    <div class="footer-info">
+        <span id="playerFooter">👤 红方  👤 蓝方</span>
+        <span id="winnerMsg">先到终点者赢</span>
+    </div>
+
+    <div class="task-repo">
+        <div class="repo-header">
+            <h3>📋 任务仓库 (可增删·自动保存)</h3>
+            <div class="add-task-form">
+                <input type="text" id="newTaskInput" placeholder="输入新任务...">
+                <button id="addTaskBtn">添加</button>
+            </div>
+        </div>
+        <div class="task-list" id="taskListContainer"></div>
+    </div>
+
+    <div class="task-modal" id="taskModal">
+        <div class="task-card">
+            <h2 id="taskTitle">✨ 对方名字的任务 ✨</h2>
+            <div class="task-content" id="taskText"></div>
+            <button class="close-task" id="closeTaskBtn">完成 ✔️</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const STORAGE_KEY = 'finalTaskLib_v5';
+        const DEFAULT_TASKS = [
+            "做一个鬼脸", "唱一句歌词", "学猫叫", "拥抱一下", "说冷笑话",
+            "原地转三圈", "夸对手", "拍手三下", "闭眼10秒", "大声说我最好看",
+            "喝一口水", "跳一段舞", "模仿机器人", "讲电影台词", "深呼吸五次",
+            "双手合十", "胜利姿势", "单脚站5秒", "绕口令", "发出怪声",
+            "假装打电话", "比心", "揉揉脸", "伸懒腰", "假装生气",
+            "大笑三声", "惊讶表情", "学动物走", "摸脚趾", "双手举高",
+            "说情话", "抛媚眼", "吹口哨", "拍拍肚子", "闭眼单脚跳",
+            "赞美对方", "wink", "说今天日期", "拍拍手跺跺脚", "假装睡觉",
+            "学鸭子叫", "扭扭腰", "指天说必胜", "超级英雄", "假装哭泣",
+            "摸头发", "打响指", "学机器人走路", "双手比耶", "单眨眼",
+            "学青蛙跳", "大喊一声", "模仿明星", "做俯卧撑1个", "深蹲2个"
+        ];
+
+        let taskLibrary = [];
+        const GRID_COUNT = 50;
+        let gridTasks = [];
+
+        let players = [
+            { pos: 0, finished: false },
+            { pos: 0, finished: false }
+        ];
+        let currentPlayer = 0; // 0:红,1:蓝
+        let diceValue = 1;
+        let rolling = false;
+        let timer = null;
+        let isTaskModalOpen = false;
+        let isMoving = false;
+        let autoCloseTimer = null;
+        let currentTaskIsEmpty = false; // 标记当前弹窗是否为空格子
+
+        // DOM
+        const trackContainer = document.getElementById('trackContainer');
+        const diceEl = document.getElementById('dice');
+        const winnerMsg = document.getElementById('winnerMsg');
+        const playerFooter = document.getElementById('playerFooter');
+        const rollBtn = document.getElementById('rollDiceBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const taskModal = document.getElementById('taskModal');
+        const taskTitle = document.getElementById('taskTitle');
+        const taskTextEl = document.getElementById('taskText');
+        const closeTaskBtn = document.getElementById('closeTaskBtn');
+        const taskListContainer = document.getElementById('taskListContainer');
+        const newTaskInput = document.getElementById('newTaskInput');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        const player1Input = document.getElementById('player1Name');
+        const player2Input = document.getElementById('player2Name');
+
+        // 加载/保存任务库
+        function loadTaskLibrary() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try { taskLibrary = JSON.parse(stored); } catch { taskLibrary = [...DEFAULT_TASKS]; }
+                if (!Array.isArray(taskLibrary) || taskLibrary.length === 0) taskLibrary = [...DEFAULT_TASKS];
+            } else {
+                taskLibrary = [...DEFAULT_TASKS];
+            }
+            renderTaskList();
+        }
+        function saveTaskLibrary() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(taskLibrary));
+        }
+
+        function renderTaskList() {
+            taskListContainer.innerHTML = '';
+            taskLibrary.forEach((task, i) => {
+                const chip = document.createElement('div');
+                chip.className = 'task-chip';
+                chip.innerHTML = `<span>${task}</span><button class="remove-task" data-index="${i}">✖</button>`;
+                taskListContainer.appendChild(chip);
+            });
+            document.querySelectorAll('.remove-task').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeTask(parseInt(btn.dataset.index));
+                });
+            });
+        }
+
+        function addTask(newTask) {
+            if (newTask.trim() === '') return;
+            taskLibrary.push(newTask.trim());
+            saveTaskLibrary();
+            renderTaskList();
+        }
+
+        function removeTask(index) {
+            if (index >= 0 && index < taskLibrary.length) {
+                taskLibrary.splice(index, 1);
+                saveTaskLibrary();
+                renderTaskList();
+            }
+        }
+
+        // 强制43个格子有任务（除首尾外全部有任务，即中间48个格子必须43个有任务）
+        function assignTasksToGrid() {
+            const tasks = new Array(GRID_COUNT).fill(null);
+            tasks[0] = null;
+            tasks[GRID_COUNT-1] = null;
+
+            const middleIndices = [];
+            for (let i = 1; i <= 48; i++) middleIndices.push(i);
+
+            // 随机打乱中间索引
+            for (let i = middleIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [middleIndices[i], middleIndices[j]] = [middleIndices[j], middleIndices[i]];
+            }
+
+            // 前43个放任务，后5个留空
+            for (let k = 0; k < 43; k++) {
+                const idx = middleIndices[k];
+                if (taskLibrary.length > 0) {
+                    const rand = Math.floor(Math.random() * taskLibrary.length);
+                    tasks[idx] = taskLibrary[rand];
+                } else {
+                    tasks[idx] = "默认任务: 做点有趣的事";
+                }
+            }
+            // 剩下的5个格子保持null
+            return tasks;
+        }
+
+        // 渲染棋盘
+        function renderBoard() {
+            trackContainer.innerHTML = '';
+            for (let r = 0; r < 5; r++) {
+                const row = document.createElement('div');
+                row.className = 'grid-row';
+                for (let c = 0; c < 10; c++) {
+                    const index = r * 10 + c;
+                    row.appendChild(createCellElement(index));
+                }
+                trackContainer.appendChild(row);
+            }
+            placePieces();
+            updateFooterNames();
+        }
+
+        function createCellElement(index) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.index = index;
+
+            if (index === 0) {
+                cell.classList.add('start');
+                const startSpan = document.createElement('span');
+                startSpan.textContent = '开始';
+                startSpan.style.fontSize = '1.8rem';
+                startSpan.style.fontWeight = 'bold';
+                cell.appendChild(startSpan);
+            } else if (index === GRID_COUNT-1) {
+                cell.classList.add('finish');
+                const finishSpan = document.createElement('span');
+                finishSpan.textContent = '终点';
+                finishSpan.style.fontSize = '1.8rem';
+                finishSpan.style.fontWeight = 'bold';
+                cell.appendChild(finishSpan);
+            } else {
+                const numSpan = document.createElement('span');
+                numSpan.style.position = 'absolute';
+                numSpan.style.top = '6px';
+                numSpan.style.left = '8px';
+                numSpan.style.fontSize = '1.4rem';
+                numSpan.style.opacity = '0.5';
+                numSpan.textContent = index + 1;
+                cell.appendChild(numSpan);
+            }
+
+            cell.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(cell.dataset.index);
+                const task = gridTasks[idx];
+                if (task) showTask(idx, task, false); // 手动点击格子查看，不自动关闭
+                else alert(`格子 ${idx+1} 无任务`);
+            });
+            return cell;
+        }
+
+        function placePieces() {
+            document.querySelectorAll('.piece').forEach(p => p.remove());
+
+            if (!players[0].finished) {
+                const cell1 = document.querySelector(`.cell[data-index="${players[0].pos}"]`);
+                if (cell1) {
+                    const piece1 = document.createElement('div');
+                    piece1.className = 'piece p1';
+                    piece1.dataset.player = '0';
+                    piece1.textContent = player1Input.value.trim() || '红方';
+                    cell1.style.position = 'relative';
+                    cell1.appendChild(piece1);
+                }
+            }
+
+            if (!players[1].finished) {
+                const cell2 = document.querySelector(`.cell[data-index="${players[1].pos}"]`);
+                if (cell2) {
+                    const piece2 = document.createElement('div');
+                    piece2.className = 'piece p2';
+                    piece2.dataset.player = '1';
+                    piece2.textContent = player2Input.value.trim() || '蓝方';
+                    if (players[0].pos === players[1].pos && !players[0].finished && !players[1].finished) {
+                        piece2.style.transform = 'translate(-30%, -30%)';
+                        const p1 = cell2.querySelector('.piece.p1');
+                        if (p1) p1.style.transform = 'translate(-70%, -70%)';
+                    }
+                    cell2.style.position = 'relative';
+                    cell2.appendChild(piece2);
+                }
+            }
+
+            checkWinner();
+        }
+
+        async function animateMove(startPos, steps) {
+            return new Promise((resolve) => {
+                let step = 0;
+                const totalSteps = steps;
+                const interval = setInterval(() => {
+                    if (step >= totalSteps) {
+                        clearInterval(interval);
+                        resolve();
+                        return;
+                    }
+                    step++;
+                    const newPos = Math.min(startPos + step, GRID_COUNT - 1);
+                    players[currentPlayer].pos = newPos;
+                    placePieces();
+
+                    if (newPos === GRID_COUNT - 1) {
+                        clearInterval(interval);
+                        resolve();
+                    }
+                }, 280);
+            });
+        }
+
+        function rollDice() {
+            if (rolling || isMoving) return;
+            if (players[0].finished || players[1].finished) { alert('游戏已结束，重新开始吧'); return; }
+
+            rolling = true;
+            diceEl.classList.add('rolling');
+            const rollInterval = setInterval(() => {
+                const fake = Math.floor(Math.random() * 6) + 1;
+                updateDiceFace(fake);
+            }, 80);
+
+            setTimeout(() => {
+                clearInterval(rollInterval);
+                diceEl.classList.remove('rolling');
+                diceValue = Math.floor(Math.random() * 6) + 1;
+                updateDiceFace(diceValue);
+                rolling = false;
+                moveCurrentPlayerWithAnimation();
+            }, 2000);
+        }
+
+        function updateDiceFace(val) {
+            const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+            diceEl.textContent = faces[val-1];
+        }
+
+        async function moveCurrentPlayerWithAnimation() {
+            if (isMoving) return;
+            isMoving = true;
+
+            const player = players[currentPlayer];
+            if (player.finished) {
+                isMoving = false;
+                nextTurn();
+                return;
+            }
+
+            const startPos = player.pos;
+            const steps = Math.min(diceValue, GRID_COUNT - 1 - startPos);
+            if (steps <= 0) {
+                isMoving = false;
+                nextTurn();
+                return;
+            }
+
+            await animateMove(startPos, steps);
+
+            if (player.pos === GRID_COUNT - 1) {
+                player.finished = true;
+                winnerMsg.innerText = `🏆 ${getPlayerName(currentPlayer)} 获胜！ 🏆`;
+                placePieces();
+                isMoving = false;
+                return;
+            }
+
+            placePieces();
+            const task = gridTasks[player.pos];
+            // 显示弹窗，根据是否有任务决定是否自动关闭
+            showTaskWithOpponentName(player.pos, task);
+            isMoving = false;
+        }
+
+        function getOpponentName() {
+            return currentPlayer === 0 ? (player2Input.value.trim() || '蓝方') : (player1Input.value.trim() || '红方');
+        }
+
+        // 显示任务弹窗 (根据是否有任务决定自动关闭还是手动)
+        function showTaskWithOpponentName(gridIndex, task) {
+            if (isTaskModalOpen) {
+                closeTaskImmediately();
+            }
+            const opponent = getOpponentName();
+            const isEmpty = (task === null || task === undefined);
+            currentTaskIsEmpty = isEmpty;
+
+            if (!isEmpty) {
+                taskTitle.textContent = `✨ ${opponent} 的任务 ✨`;
+                taskTextEl.textContent = task;
+                // 有任务时隐藏自动关闭定时器，必须手动
+                if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            } else {
+                taskTitle.textContent = `✨ 恭喜 ${opponent} ✨`;
+                taskTextEl.textContent = `恭喜 ${opponent} 逃过一个任务！`;
+                // 空格子自动关闭
+                if (autoCloseTimer) clearTimeout(autoCloseTimer);
+                autoCloseTimer = setTimeout(() => {
+                    if (isTaskModalOpen && currentTaskIsEmpty) {
+                        closeTaskImmediately();
+                        nextTurn();
+                    }
+                }, 1500);
+            }
+
+            taskModal.classList.add('show');
+            isTaskModalOpen = true;
+        }
+
+        function closeTaskImmediately() {
+            taskModal.classList.remove('show');
+            isTaskModalOpen = false;
+            if (autoCloseTimer) {
+                clearTimeout(autoCloseTimer);
+                autoCloseTimer = null;
+            }
+        }
+
+        function closeTaskManually() {
+            if (!isTaskModalOpen) return;
+            // 只有有任务的格子才能手动关闭，并且关闭后切换回合
+            if (!currentTaskIsEmpty) {
+                closeTaskImmediately();
+                nextTurn();
+            } else {
+                // 空格子如果点了手动关闭，也关掉并切换回合（防止按钮误触）
+                closeTaskImmediately();
+                nextTurn();
+            }
+        }
+
+        function nextTurn() {
+            if (players[0].finished || players[1].finished) return;
+            currentPlayer = currentPlayer === 0 ? 1 : 0;
+        }
+
+        function getPlayerName(idx) {
+            return idx === 0 ? (player1Input.value.trim() || '红方') : (player2Input.value.trim() || '蓝方');
+        }
+
+        function updateFooterNames() {
+            playerFooter.innerText = `👤 ${player1Input.value || '红方'}  👤 ${player2Input.value || '蓝方'}`;
+        }
+
+        function checkWinner() {
+            if (players[0].finished) winnerMsg.innerText = `🏆 ${player1Input.value || '红方'} 获胜！ 🏆`;
+            else if (players[1].finished) winnerMsg.innerText = `🏆 ${player2Input.value || '蓝方'} 获胜！ 🏆`;
+            else winnerMsg.innerText = '先到终点者赢';
+        }
+
+        function resetGame() {
+            clearInterval(timer); rolling = false; isMoving = false; diceEl.classList.remove('rolling');
+            if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            closeTaskImmediately();
+            players = [ { pos: 0, finished: false }, { pos: 0, finished: false } ];
+            currentPlayer = 0;
+            diceValue = 1;
+            updateDiceFace(1);
+            gridTasks = assignTasksToGrid();
+            renderBoard();
+            winnerMsg.innerText = '先到终点者赢';
+            updateFooterNames();
+        }
+
+        rollBtn.addEventListener('click', rollDice);
+        resetBtn.addEventListener('click', resetGame);
+        closeTaskBtn.addEventListener('click', closeTaskManually);
+        taskModal.addEventListener('click', (e) => {
+            if (e.target === taskModal) {
+                closeTaskManually();
+            }
+        });
+        addTaskBtn.addEventListener('click', () => { addTask(newTaskInput.value); newTaskInput.value = ''; });
+        newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { addTask(newTaskInput.value); newTaskInput.value = ''; } });
+        player1Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
+        player2Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
+
+        loadTaskLibrary();
+        gridTasks = assignTasksToGrid();
+        renderBoard();
+        updateFooterNames();
+    })();
+</script>
+</body>
+</html>
