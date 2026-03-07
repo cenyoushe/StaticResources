@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>妹妹哥哥飞行棋 · 下拉双仓库</title>
+    <title>妹妹哥哥飞行棋 · 切换仓库重置格子</title>
     <style>
         * {
             box-sizing: border-box;
@@ -529,7 +529,7 @@
 
 <script>
     (function() {
-        const CUSTOM_STORAGE_KEY = 'customTasks_v2';
+        const CUSTOM_STORAGE_KEY = 'customTasks_v3';
         
         // 默认任务数组 - 只读模板
         const DEFAULT_TASKS = [
@@ -615,6 +615,10 @@
             currentRepo = 'default';
             updateRepoDisplay();
             renderTaskList();
+            
+            // 初始分配格子任务（使用所有任务）
+            gridTasks = assignTasksToGrid();
+            renderBoard();
         }
 
         function saveCustomTasks() {
@@ -697,6 +701,10 @@
             if (currentRepo === 'custom') {
                 renderTaskList();
             }
+            
+            // 重新分配格子任务（基于更新后的所有任务）
+            gridTasks = assignTasksToGrid();
+            renderBoard();
         }
 
         function removeCustomTask(task) {
@@ -705,6 +713,10 @@
                 customTasks.splice(index, 1);
                 saveCustomTasks();
                 renderTaskList(); // 刷新显示
+                
+                // 重新分配格子任务（基于更新后的所有任务）
+                gridTasks = assignTasksToGrid();
+                renderBoard();
             }
         }
 
@@ -735,6 +747,21 @@
                 }
             }
             return tasks;
+        }
+
+        // 重置游戏（不重置任务库，只重置位置和重新分配格子）
+        function resetGameWithCurrentTasks() {
+            clearInterval(timer); rolling = false; isMoving = false; diceEl.classList.remove('rolling');
+            if (autoCloseTimer) clearTimeout(autoCloseTimer);
+            closeTaskImmediately();
+            players = [ { pos: 0, finished: false }, { pos: 0, finished: false } ];
+            currentPlayer = 0;
+            diceValue = 1;
+            updateDiceFace(1);
+            gridTasks = assignTasksToGrid();
+            renderBoard();
+            winnerMsg.innerText = '先到终点者赢';
+            updateFooterNames();
         }
 
         function renderBoard() {
@@ -989,17 +1016,7 @@
         }
 
         function resetGame() {
-            clearInterval(timer); rolling = false; isMoving = false; diceEl.classList.remove('rolling');
-            if (autoCloseTimer) clearTimeout(autoCloseTimer);
-            closeTaskImmediately();
-            players = [ { pos: 0, finished: false }, { pos: 0, finished: false } ];
-            currentPlayer = 0;
-            diceValue = 1;
-            updateDiceFace(1);
-            gridTasks = assignTasksToGrid();
-            renderBoard();
-            winnerMsg.innerText = '先到终点者赢';
-            updateFooterNames();
+            resetGameWithCurrentTasks();
         }
 
         // 事件绑定
@@ -1038,9 +1055,14 @@
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const repo = item.dataset.repo;
-                currentRepo = repo;
-                updateRepoDisplay();
-                renderTaskList();
+                if (repo !== currentRepo) {
+                    currentRepo = repo;
+                    updateRepoDisplay();
+                    renderTaskList();
+                    
+                    // 切换仓库时重新开始游戏（重置位置并重新分配格子任务）
+                    resetGameWithCurrentTasks();
+                }
                 hideDropdown();
             });
         });
@@ -1057,9 +1079,6 @@
 
         // 初始化
         initializeCustomTasks();
-        gridTasks = assignTasksToGrid();
-        renderBoard();
-        updateFooterNames();
     })();
 </script>
 </body>
