@@ -435,9 +435,9 @@
 
     <div class="task-repo">
         <div class="repo-header">
-            <h3>📋 任务仓库</h3>
+            <h3>📋 任务仓库 (默认+自定义)</h3>
             <div class="add-task-form">
-                <input type="text" id="newTaskInput" placeholder="新任务...">
+                <input type="text" id="newTaskInput" placeholder="添加自定义任务...">
                 <button id="addTaskBtn">添加</button>
             </div>
         </div>
@@ -455,85 +455,29 @@
 
 <script>
     (function() {
-        const STORAGE_KEY = 'finalTaskLib_v9';
+        const STORAGE_KEY = 'customTasks_v1';  // 只存储自定义任务
         
-        // 默认任务数组 - 您可以手动修改这里的内容，刷新后会自动同步到本地存储（仅添加不删除）
+        // 默认任务数组 - 只读模板，您可以手动修改这里
         const DEFAULT_TASKS = [
-            "隔着衣服用舌头在对方耳垂画圈 30秒，不许出声",
-  "蒙眼用手指在对方后背写“我好想要你”，猜对有奖励猜错惩罚加倍",
-  "用冰块从锁骨慢慢滑到小腹 画圈不许停",
-  "对方坐你大腿上双手被反绑 深吻到其中一方先求饶",
-  "脱掉上衣后舌尖沿脊椎一路舔到腰窝",
-  "隔着内裤指尖画圈挑逗最敏感点 但1分钟内不许真正进去",
-  "跪在面前托住下巴 用最色情声音说出三句想被怎么玩",
-  "推倒床上双手绑过头顶 从脚踝吻咬舔一路向上",
-  "69体位只许用舌头 谁先高潮或求饶算输",
-  "跳蛋/震动棒贴最敏感点 赢家控制强度看能忍多久不叫",
-  "后入式抱紧轻掐脖子 在耳边说最下流的情话",
-  "只能用嘴帮对方脱内裤 失败就塞内裤当口球",
-  "双手绑床头 用羽毛+冰块+舌头轮流刺激不碰想碰的地方",
-  "扮演被主人惩罚的宠物 爬过来求“主人随便玩我”",
-  "全程录像（仅自己看） 输家对着镜头承认今天被玩到腿软/高潮了",
-  "舔对方手指 一根一根慢慢含住深吮",
-  "用丝袜蒙眼 然后随机亲吻全身",
-  "隔着裤子用脚轻轻踩踏 最敏感部位30秒",
-  "把对方压墙上 单手扣住双手举高深吻+磨蹭",
-  "舌尖在乳尖画8字 不许停1分钟",
-  "蒙眼猜味道 用身体不同部位涂蜂蜜/巧克力酱让对方舔干净",
-  "轻咬耳垂 同时低声说“我今晚要弄哭你”",
-  "指甲从后颈一路轻轻刮到臀部",
-  "对方趴着 赢家从后面亲吻后腰慢慢往下",
-  "嘴里含冰块 然后跟对方舌吻传递冰感",
-  "输家用最羞耻姿势 主动展示自己最敏感的地方",
-  "赢家手机录下 对方高潮时的声音/表情片段",
-  "双手被绑背后 只能用嘴服侍对方",
-  "热毛巾敷敏感处 突然换冰块刺激",
-  "对方站立 赢家从后面抱住揉胸+咬肩膀",
-  "舔对方脚趾 一根一根慢慢吮吸",
-  "振动棒隔着内裤画∞符号",
-  "把对方推倒沙发 骑上去亲吻脖子留吻痕",
-  "舌头在肚脐画圈 同时手指往下挑逗",
-  "蒙眼+耳机放色情音声 然后突然触碰",
-  "双手举高绑床头 舌头从腋下舔到腰侧",
-  "对方趴着翘臀 赢家从后面亲吻臀缝",
-  "羽毛挑逗乳尖 直到对方主动求碰更激烈",
-  "69但禁止高潮 谁先到边缘就算输",
-  "低温安全蜡滴在背上/大腿",
-  "对方跪着抬头 赢家手指勾下巴喂水果/巧克力",
-  "把对方抱起抵墙 腿缠腰上激烈深吻",
-  "冰块在乳沟滑动 然后舌头舔掉水珠",
-  "对方四肢着地 赢家从后面轻拍臀部+挑逗",
-  "丝巾蒙眼+绑手 慢慢一件件脱衣服",
-  "跳蛋塞进内裤 遥控器交给对方随意玩",
-  "对方站镜子前 赢家从后面抱住一起看被玩",
-  "舌头舔锁骨 同时手指在后腰画淫荡图案",
-  "双手铐床头 振动棒慢慢靠近但不给满足",
-  "对方趴着 舌头沿着脊柱一路往下舔",
-  "热气吹敏感处 然后突然用舌头重重一舔",
-  "指尖轻弹乳尖 轻重交替玩弄",
-  "把对方压身下 单手轻掐脖子深吻",
-  "输家戴眼罩 猜对方用什么部位碰自己",
-  "舌头在耳后画爱心 同时低语羞耻指令",
-  "对方弯腰扶桌 赢家从后面贴紧磨蹭+轻拍",
-  "嘴里含冰块亲吻 最敏感点",
-  "对方腿被抬高 舌尖大腿内侧来回舔",
-  "丝袜轻勒脖子 轻微施力（安全第一）",
-  "指甲刮后背 画出各种淫荡图案",
-  "对方跪坐 赢家站着喂手指让吮吸",
-  "振动棒在锁骨滑动 慢慢往下逼近",
-  "把对方推倒 用膝盖顶开双腿固定",
-  "舌头在腋下画圈（超敏感者慎用）",
-  "对方趴床边 下半身悬空被各种玩弄",
-  "低温热蜡滴乳尖附近",
-  "跳蛋贴乳尖 遥控调最高看崩溃反应",
-  "对方双手举高 赢家从腋下舔到手腕内侧",
-  "舌头在后耳根吹气 同时轻捏敏感点",
-  "对方绑成大字型 赢家用全身慢慢摩擦挑逗",
-  "对方跪着抬头 赢家用性器轻拍脸颊羞辱",
-  "各种道具轮流刺激 直到对方彻底崩溃求饶"
+            "做一个鬼脸", "唱一句歌词", "学猫叫", "拥抱一下", "说冷笑话",
+            "原地转三圈", "夸对方", "拍手三下", "闭眼10秒", "大声说我最好看",
+            "喝一口水", "跳一段舞", "模仿机器人", "讲电影台词", "深呼吸五次",
+            "双手合十", "胜利姿势", "单脚站5秒", "绕口令", "发出怪声",
+            "假装打电话", "比心", "揉揉脸", "伸懒腰", "假装生气",
+            "大笑三声", "惊讶表情", "学动物走", "摸脚趾", "双手举高",
+            "说句甜甜的话", "抛媚眼", "吹口哨", "拍拍肚子", "闭眼单脚跳",
+            "赞美妹妹/哥哥", "wink", "说今天日期", "拍拍手跺跺脚", "假装睡觉",
+            "学鸭子叫", "扭扭腰", "指天说必胜", "超级英雄", "假装哭泣",
+            "摸头发", "打响指", "学机器人走路", "双手比耶", "单眨眼",
+            "学青蛙跳", "大喊一声", "模仿明星", "做俯卧撑1个", "深蹲2个"
         ];
 
-        let taskLibrary = [];
+        // 用户自定义任务数组
+        let customTasks = [];
+        
+        // 最终合并显示的任务列表（默认+自定义）
+        let mergedTasks = [];
+
         const GRID_COUNT = 50;
         let gridTasks = [];
 
@@ -567,98 +511,99 @@
         const player1Input = document.getElementById('player1Name');
         const player2Input = document.getElementById('player2Name');
 
-        // 初始化任务库 - 智能合并：保留用户自定义，仅添加默认任务中不重复的新任务
-        function initializeTaskLibrary() {
+        // 初始化自定义任务库
+        function initializeCustomTasks() {
             const stored = localStorage.getItem(STORAGE_KEY);
             
             if (stored) {
                 try {
-                    // 加载用户已有的任务库（包含所有自定义任务）
-                    taskLibrary = JSON.parse(stored);
-                    // 确保是数组
-                    if (!Array.isArray(taskLibrary)) {
-                        taskLibrary = [...DEFAULT_TASKS];
+                    customTasks = JSON.parse(stored);
+                    if (!Array.isArray(customTasks)) {
+                        customTasks = [];
                     }
                 } catch {
-                    // 解析失败，使用默认任务
-                    taskLibrary = [...DEFAULT_TASKS];
+                    customTasks = [];
                 }
             } else {
-                // 首次运行，使用默认任务
-                taskLibrary = [...DEFAULT_TASKS];
+                // 第一次使用，自定义任务为空数组（用户需要自己添加，或者可以选择初始为空）
+                customTasks = [];
+                // 如果您希望第一次使用时自定义任务包含默认任务，可以取消下面的注释
+                // customTasks = [...DEFAULT_TASKS];
             }
             
-            // 智能合并：只添加默认任务中不存在的新任务，绝不删除用户自定义的任务
-            mergeNewDefaultTasks();
-            
-            // 保存合并后的任务库
-            saveTaskLibrary();
-            
+            // 合并并显示任务列表
+            mergeAndRenderTasks();
+        }
+
+        // 合并默认任务和自定义任务（默认任务在前，自定义任务在后）
+        function mergeTasks() {
+            // 合并规则：默认任务（去重）+ 自定义任务（保持用户添加顺序）
+            // 注意：如果自定义任务与默认任务重复，我们仍然保留（用户可以自由管理）
+            return [...DEFAULT_TASKS, ...customTasks];
+        }
+
+        // 合并并渲染任务列表
+        function mergeAndRenderTasks() {
+            mergedTasks = mergeTasks();
             renderTaskList();
         }
 
-        // 智能合并：只添加默认任务中不存在的新任务，保留所有用户自定义任务
-        function mergeNewDefaultTasks() {
-            let needsSave = false;
-            
-            // 遍历默认任务（从后往前，保持添加顺序）
-            for (let i = DEFAULT_TASKS.length - 1; i >= 0; i--) {
-                const defaultTask = DEFAULT_TASKS[i];
-                
-                // 检查任务库中是否已经存在这个任务（精确匹配）
-                // 注意：这里使用严格匹配，如果用户添加了类似但不同的任务，不会被覆盖
-                if (!taskLibrary.includes(defaultTask)) {
-                    // 将新默认任务添加到头部
-                    taskLibrary.unshift(defaultTask);
-                    needsSave = true;
-                }
-            }
-            
-            // 注意：我们绝不删除任何用户自定义的任务，即使它们不在默认任务列表中
-            
-            if (needsSave) {
-                console.log('检测到新的默认任务，已添加到仓库头部');
-            }
-        }
-
-        function saveTaskLibrary() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(taskLibrary));
+        function saveCustomTasks() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(customTasks));
+            // 保存后重新合并显示
+            mergeAndRenderTasks();
         }
 
         function renderTaskList() {
             taskListContainer.innerHTML = '';
-            const reversedLibrary = [...taskLibrary].reverse();
-            reversedLibrary.forEach((task, i) => {
-                const originalIndex = taskLibrary.length - 1 - i;
+            
+            // 显示所有合并后的任务（但删除按钮只对自定义任务生效）
+            mergedTasks.forEach((task, index) => {
                 const chip = document.createElement('div');
                 chip.className = 'task-chip';
-                chip.innerHTML = `<span>${task}</span><button class="remove-task" data-index="${originalIndex}">✖</button>`;
+                
+                // 判断这个任务是否来自自定义数组（用于决定是否显示删除按钮）
+                const isCustom = customTasks.includes(task);
+                
+                if (isCustom) {
+                    // 自定义任务：显示删除按钮
+                    chip.innerHTML = `<span>${task}</span><button class="remove-task" data-task="${task}">✖</button>`;
+                } else {
+                    // 默认任务：不显示删除按钮
+                    chip.innerHTML = `<span>${task}</span>`;
+                }
+                
                 taskListContainer.appendChild(chip);
             });
+            
+            // 绑定删除事件（只对自定义任务生效）
             document.querySelectorAll('.remove-task').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    removeTask(parseInt(btn.dataset.index));
+                    const taskToRemove = btn.dataset.task;
+                    removeCustomTask(taskToRemove);
                 });
             });
         }
 
-        function addTask(newTask) {
+        function addCustomTask(newTask) {
             if (newTask.trim() === '') return;
-            taskLibrary.unshift(newTask.trim());
-            saveTaskLibrary();
-            renderTaskList();
+            
+            // 添加到自定义数组（不检查重复，用户可以自己管理）
+            customTasks.unshift(newTask.trim());
+            saveCustomTasks();
         }
 
-        function removeTask(index) {
-            if (index >= 0 && index < taskLibrary.length) {
-                taskLibrary.splice(index, 1);
-                saveTaskLibrary();
-                renderTaskList();
+        function removeCustomTask(task) {
+            // 只从自定义数组中删除
+            const index = customTasks.indexOf(task);
+            if (index !== -1) {
+                customTasks.splice(index, 1);
+                saveCustomTasks();
             }
         }
 
-        // 强制43个格子有任务
+        // 强制43个格子有任务（从合并后的任务列表中随机选取）
         function assignTasksToGrid() {
             const tasks = new Array(GRID_COUNT).fill(null);
             tasks[0] = null;
@@ -672,11 +617,12 @@
                 [middleIndices[i], middleIndices[j]] = [middleIndices[j], middleIndices[i]];
             }
 
+            // 使用合并后的任务列表 mergedTasks
             for (let k = 0; k < 43; k++) {
                 const idx = middleIndices[k];
-                if (taskLibrary.length > 0) {
-                    const rand = Math.floor(Math.random() * taskLibrary.length);
-                    tasks[idx] = taskLibrary[rand];
+                if (mergedTasks.length > 0) {
+                    const rand = Math.floor(Math.random() * mergedTasks.length);
+                    tasks[idx] = mergedTasks[rand];
                 } else {
                     tasks[idx] = "默认任务: 做点有趣的事";
                 }
@@ -734,12 +680,10 @@
                 const idx = parseInt(cell.dataset.index);
                 const task = gridTasks[idx];
                 if (task) {
-                    // 手动点击格子查看任务，但不影响游戏流程
                     taskTitle.textContent = `✨ 格子 ${idx+1} 的任务 ✨`;
                     taskTextEl.textContent = task;
                     taskModal.classList.add('show');
                     isTaskModalOpen = true;
-                    // 手动查看时不清空自动关闭定时器，但不影响
                 } else {
                     alert(`格子 ${idx+1} 无任务`);
                 }
@@ -959,15 +903,13 @@
                 closeTaskManually();
             }
         });
-        addTaskBtn.addEventListener('click', () => { addTask(newTaskInput.value); newTaskInput.value = ''; });
-        newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { addTask(newTaskInput.value); newTaskInput.value = ''; } });
+        addTaskBtn.addEventListener('click', () => { addCustomTask(newTaskInput.value); newTaskInput.value = ''; });
+        newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { addCustomTask(newTaskInput.value); newTaskInput.value = ''; } });
         player1Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
         player2Input.addEventListener('input', () => { updateFooterNames(); checkWinner(); placePieces(); });
 
-        // 初始化任务库（智能合并，保留用户自定义）
-        initializeTaskLibrary();
-        
-        // 分配格子任务
+        // 初始化
+        initializeCustomTasks();
         gridTasks = assignTasksToGrid();
         renderBoard();
         updateFooterNames();
@@ -975,6 +917,3 @@
 </script>
 </body>
 </html>
-
-
-
